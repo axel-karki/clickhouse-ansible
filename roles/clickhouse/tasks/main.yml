@@ -5,6 +5,9 @@
       - ca-certificates
       - curl
       - gnupg
+      - python3
+      - python3-pip
+      - python3-clickhouse-driver
     state: present
     update_cache: yes
 
@@ -44,14 +47,14 @@
     state: started
     enabled: yes
 
-- name: Create a user
+- name: Create a ClickHouse user
   community.clickhouse.clickhouse_user:
     login_user: default
+    login_password: ""
+    login_host: localhost
     name: "{{ clickhouse_user }}"
     password: "{{ clickhouse_password }}"
-    hosts: ['::/0']
-    profiles: [default]
-    quotas: [default]
+    state: present
 
 - name: Deploy ClickHouse main config
   template:

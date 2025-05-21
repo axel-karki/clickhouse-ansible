@@ -5,6 +5,7 @@
     <errorlog>/var/log/clickhouse-server/clickhouse-server.err.log</errorlog>
   </logger>
 
+  <listen_host>0.0.0.0</listen_host>
   <listen_host>::</listen_host>
   <http_port>8123</http_port>
   <tcp_port>9000</tcp_port>
@@ -15,5 +16,5 @@
 
   <timezone>UTC</timezone>
 
-  <users_config>users.xml</users_config>
+  <users_config>/etc/clickhouse-server/users.xml</users_config>
 </clickhouse>
