@@ -1,0 +1,63 @@
+- name: Ensure prerequisites are installed
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+    state: present
+    update_cache: yes
+
+- name: Create directory for keyring if it doesn't exist
+  file:
+    path: /usr/share/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download and install ClickHouse GPG key from RPM repo
+  shell: |
+    curl -fsSL https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key | gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg
+  args:
+    creates: /usr/share/keyrings/clickhouse-keyring.gpg
+
+- name: Add ClickHouse APT repository using your key
+  copy:
+    dest: /etc/apt/sources.list.d/clickhouse.list
+    content: |
+      deb [ arch=amd64 signed-by=/usr/share/keyrings/clickhouse-keyring.gpg ] https://packages.clickhouse.com/deb stable main
+    mode: '0644'
+
+- name: Update APT cache
+  apt:
+    update_cache: yes
+
+- name: Install ClickHouse server and client
+  apt:
+    name:
+      - clickhouse-server
+      - clickhouse-client
+    state: present
+
+- name: Ensure ClickHouse service is started and enabled
+  service:
+    name: clickhouse-server
+    state: started
+    enabled: yes
+
+- name: Deploy ClickHouse main config
+  template:
+    src: config.xml.j2
+    dest: /etc/clickhouse-server/config.xml
+    owner: clickhouse
+    group: clickhouse
+    mode: '0644'
+  notify: Restart ClickHouse
+
+- name: Deploy ClickHouse users config
+  template:
+    src: users.xml.j2
+    dest: /etc/clickhouse-server/users.xml
+    owner: clickhouse
+    group: clickhouse
+    mode: '0644'
+  notify: Restart ClickHouse

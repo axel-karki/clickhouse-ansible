@@ -1,0 +1,5 @@
+- name: Install and configure ClickHouse server
+  hosts: clickhouse
+  become: yes
+  roles:
+    - clickhouse
