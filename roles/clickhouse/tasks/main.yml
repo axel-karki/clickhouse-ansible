@@ -44,20 +44,63 @@
     state: started
     enabled: yes
 
-- name: Deploy ClickHouse main config
-  template:
-    src: config.xml.j2
-    dest: /etc/clickhouse-server/config.xml
-    owner: clickhouse
-    group: clickhouse
-    mode: '0644'
-  notify: Restart ClickHouse
+# ==== ClickHouse configuration using community.clickhouse ====
 
-- name: Deploy ClickHouse users config
-  template:
-    src: users.xml.j2
-    dest: /etc/clickhouse-server/users.xml
-    owner: clickhouse
-    group: clickhouse
-    mode: '0644'
-  notify: Restart ClickHouse
+- name: Configure ClickHouse user
+  community.clickhouse.clickhouse_user:
+    name: "{{ clickhouse_user }}"
+    password: "{{ clickhouse_password }}"
+    networks:
+      - "::/0"
+    profile: default
+    quota: default
+    state: present
+
+- name: Configure ClickHouse profile
+  community.clickhouse.clickhouse_profile:
+    name: default
+    settings:
+      max_memory_usage: 10000000000
+
+- name: Configure ClickHouse quota
+  community.clickhouse.clickhouse_quota:
+    name: default
+    intervals:
+      - duration: 3600
+        queries: 0
+        errors: 0
+
+- name: Configure ClickHouse server settings
+  community.clickhouse.clickhouse_config:
+    config:
+      logger:
+        level: information
+        log: /var/log/clickhouse-server/clickhouse-server.log
+        errorlog: /var/log/clickhouse-server/clickhouse-server.err.log
+      listen_host: "::"
+      http_port: 8123
+      tcp_port: 9000
+      path: /var/lib/clickhouse/
+      tmp_path: /var/lib/clickhouse/tmp/
+      user_files_path: /var/lib/clickhouse/user_files/
+      timezone: UTC
+    restart: true
+
+
+# - name: Deploy ClickHouse main config
+#   template:
+#     src: config.xml.j2
+#     dest: /etc/clickhouse-server/config.xml
+#     owner: clickhouse
+#     group: clickhouse
+#     mode: '0644'
+#   notify: Restart ClickHouse
+
+# - name: Deploy ClickHouse users config
+#   template:
+#     src: users.xml.j2
+#     dest: /etc/clickhouse-server/users.xml
+#     owner: clickhouse
+#     group: clickhouse
+#     mode: '0644'
+#   notify: Restart ClickHouse
