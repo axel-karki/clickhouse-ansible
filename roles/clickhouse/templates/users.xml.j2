@@ -1,51 +1,90 @@
+<?xml version="1.0"?>
 <clickhouse>
-    <!-- Profiles of settings. -->
-    <profiles>
-        <!-- Default settings. -->
-        <default>
-            <max_memory_usage>1000000000</max_memory_usage>
-        </default>
-
-        <!-- Profile that allows only read queries. -->
-        <readonly>
-            <readonly>1</readonly>
-        </readonly>
-    </profiles>
-
-    <!-- Users and ACL. -->
+    <!-- Users and Access Rights -->
     <users>
-        <!-- If user name was not specified, 'default' user is used. -->
+        <!-- Default user for login without specifying a username -->
         <default>
-            <!-- Password can be specified in plaintext or SHA256 (in hex format) -->
-            <!-- Example: <password>qwerty</password> or -->
-            <!-- <password_sha256_hex>65e84be33532fb784c48129675f9eff3a682b27168c0ea744b2cf58ee02337c5</password_sha256_hex> -->
-            <password>{{ clickhouse_password }}</password>
+            <!-- Password authentication using bcrypt. This is the most secure and recommended method. -->
+            <password_sha256_hex>{{ clickhouse_password | password_hash('sha256') }}</password_sha256_hex>
 
+            <!-- User can create databases -->
+            <allow_databases>
+                <database>default</database>
+            </allow_databases>
+
+            <!-- Access to all databases by default -->
+            <access_management>1</access_management>
+
+            <!-- Quotas -->
             <networks>
                 <ip>::/0</ip>
             </networks>
 
-            <!-- Settings profile for user. -->
             <profile>default</profile>
-
-            <!-- Quota for user. -->
             <quota>default</quota>
-
-            <!-- User can create other users and grant rights to them. -->
-            <access_management>1</access_management>
         </default>
+
+        <!-- Admin user with extended permissions -->
+        <admin>
+            <!-- Password authentication using bcrypt -->
+            <password_sha256_hex>{{ clickhouse_password | password_hash('sha256') }}</password_sha256_hex>
+
+            <!-- Admin user has access to all databases -->
+            <access_management>1</access_management>
+
+            <!-- Networks allowed to connect -->
+            <networks>
+                <ip>::/0</ip>
+            </networks>
+
+            <profile>default</profile>
+            <quota>default</quota>
+        </admin>
     </users>
 
-    <!-- Quotas. -->
-    <quotas>
-        <!-- Name of quota. -->
+    <!-- Profiles of settings -->
+    <profiles>
+        <!-- Default settings profile -->
         <default>
-            <!-- Limits for time interval. You could specify many intervals with different limits. -->
-            <interval>
-                <!-- Length of interval. -->
-                <duration>3600</duration>
+            <!-- Maximum memory usage for a single query -->
+            <max_memory_usage>{{ clickhouse_max_memory_usage }}</max_memory_usage>
+            
+            <!-- Use cache for compiled expressions -->
+            <compile_expressions>1</compile_expressions>
+            
+            <!-- Minimal number of bytes for using SIMD CPU instructions in sorting -->
+            <min_bytes_to_use_direct_io>1048576</min_bytes_to_use_direct_io>
+            
+            <!-- Disable data prefetching -->
+            <max_read_buffer_size>10485760</max_read_buffer_size>
+            
+            <!-- Always load default columns while executing distributed query -->
+            <distributed_product_mode>deny</distributed_product_mode>
+            
+            <!-- Timeout for queries -->
+            <max_execution_time>600</max_execution_time>
+            
+            <!-- Data volumes for merge operations -->
+            <max_bytes_before_external_group_by>20000000000</max_bytes_before_external_group_by>
+            <max_bytes_before_external_sort>20000000000</max_bytes_before_external_sort>
+        </default>
 
-                <!-- No limits. Just calculate resource usage for time interval. -->
+        <!-- Read-only profile for analytics users -->
+        <readonly>
+            <readonly>1</readonly>
+            <max_memory_usage>{{ (ansible_memtotal_mb * 0.5) | int }}MB</max_memory_usage>
+            <max_execution_time>300</max_execution_time>
+            <max_rows_to_read>1000000000</max_rows_to_read>
+            <max_bytes_to_read>100000000000</max_bytes_to_read>
+        </readonly>
+    </profiles>
+
+    <!-- Quotas -->
+    <quotas>
+        <!-- Default quota -->
+        <default>
+            <interval>
+                <duration>3600</duration>
                 <queries>0</queries>
                 <errors>0</errors>
                 <result_rows>0</result_rows>
@@ -53,5 +92,17 @@
                 <execution_time>0</execution_time>
             </interval>
         </default>
+
+        <!-- Restricted quota for regular users -->
+        <user_quota>
+            <interval>
+                <duration>3600</duration>
+                <queries>100</queries>
+                <errors>100</errors>
+                <result_rows>1000000000</result_rows>
+                <read_rows>1000000000</read_rows>
+                <execution_time>1800</execution_time>
+            </interval>
+        </user_quota>
     </quotas>
 </clickhouse>
