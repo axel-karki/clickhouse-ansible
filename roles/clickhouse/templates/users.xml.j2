@@ -47,7 +47,7 @@
         <!-- Default settings profile -->
         <default>
             <!-- Maximum memory usage for a single query -->
-            <max_memory_usage>{{ clickhouse_max_memory_usage }}</max_memory_usage>
+            <max_memory_usage>{{ (ansible_memtotal_mb * 0.7) | int }}MB</max_memory_usage>
             
             <!-- Use cache for compiled expressions -->
             <compile_expressions>1</compile_expressions>
