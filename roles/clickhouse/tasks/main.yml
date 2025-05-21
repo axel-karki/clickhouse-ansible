@@ -41,6 +41,22 @@
       - clickhouse-client
     state: present
 
+- name: Deploy ClickHouse main config
+  template:
+    src: config.xml.j2
+    dest: /etc/clickhouse-server/config.xml
+    owner: clickhouse
+    group: clickhouse
+    mode: '0644'
+
+- name: Deploy ClickHouse users config
+  template:
+    src: users.xml.j2
+    dest: /etc/clickhouse-server/users.xml
+    owner: clickhouse
+    group: clickhouse
+    mode: '0644'
+
 - name: Ensure ClickHouse service is started and enabled
   service:
     name: clickhouse-server
@@ -56,20 +72,3 @@
     password: "{{ clickhouse_password }}"
     state: present
 
-- name: Deploy ClickHouse main config
-  template:
-    src: config.xml.j2
-    dest: /etc/clickhouse-server/config.xml
-    owner: clickhouse
-    group: clickhouse
-    mode: '0644'
-  notify: Restart ClickHouse
-
-- name: Deploy ClickHouse users config
-  template:
-    src: users.xml.j2
-    dest: /etc/clickhouse-server/users.xml
-    owner: clickhouse
-    group: clickhouse
-    mode: '0644'
-  notify: Restart ClickHouse
