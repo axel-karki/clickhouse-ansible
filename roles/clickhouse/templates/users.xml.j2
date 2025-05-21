@@ -1,24 +1,32 @@
 <clickhouse>
   <users>
-    <{{ clickhouse_user }}>
-      <password>{{ clickhouse_password }}</password>
+    <!-- Custom user for application access -->
+    <test>
+      <password>123</password>
       <networks>
-        <ip>::/0</ip>
+        <ip>::/0</ip> <!-- Allow from any IP -->
       </networks>
       <profile>default</profile>
       <quota>default</quota>
-    </{{ clickhouse_user }}>
+    </test>
 
+    <!-- Default system user (required for ClickHouse to start) -->
     <default>
+      <password></password> <!-- Or use <password></password> for empty password -->
       <networks>
-        <ip>::1</ip>
+        <ip>::1</ip> <!-- Localhost only -->
       </networks>
+      <profile>default</profile>
+      <quota>default</quota>
     </default>
   </users>
 
   <profiles>
     <default>
+      <!-- Increase as needed -->
       <max_memory_usage>10000000000</max_memory_usage>
+      <use_uncompressed_cache>1</use_uncompressed_cache>
+      <load_balancing>random</load_balancing>
     </default>
   </profiles>
 
@@ -28,6 +36,8 @@
         <duration>3600</duration>
         <queries>0</queries>
         <errors>0</errors>
+        <result_rows>0</result_rows>
+        <read_rows>0</read_rows>
       </interval>
     </default>
   </quotas>

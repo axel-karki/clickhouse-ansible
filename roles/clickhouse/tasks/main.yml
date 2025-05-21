@@ -63,6 +63,12 @@
     state: started
     enabled: yes
 
+- name: Wait for ClickHouse to be ready on port 9000
+  wait_for:
+    host: localhost
+    port: 9000
+    timeout: 30
+
 - name: Create a ClickHouse user
   community.clickhouse.clickhouse_user:
     login_user: default
