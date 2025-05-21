@@ -1,3 +1,4 @@
 clickhouse_version: "stable"
 clickhouse_user: "test"
 clickhouse_password: "123"
+clickhouse_password_sha256: "{{ clickhouse_password | hash('sha256') }}"
