@@ -1,0 +1,7 @@
+- name: Configure MinIO backup
+  hosts: clickhouse
+  become: yes
+  tasks:
+    - import_role:
+        name: clickhouse
+        tasks_from: minio

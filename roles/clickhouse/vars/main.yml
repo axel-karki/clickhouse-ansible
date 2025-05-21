@@ -2,3 +2,9 @@ clickhouse_version: "stable"
 clickhouse_user: "test"
 clickhouse_password: "123"
 clickhouse_password_sha256: "{{ clickhouse_password | hash('sha256') }}"
+minio_alias: minio
+minio_host: http://10.0.0.18:9000
+minio_access_key: minioadmin
+minio_secret_key: minioadmin123
+backup_script: /usr/local/bin/clickhouse_minio_backup.sh
+minio_host: http://10.0.0.18:9000

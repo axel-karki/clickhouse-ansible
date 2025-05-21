@@ -1,0 +1,91 @@
+- name: Download clickhouse-backup .deb package
+  get_url:
+    url: https://github.com/Altinity/clickhouse-backup/releases/download/v2.6.18/clickhouse-backup_2.6.18_amd64.deb
+    dest: /tmp/clickhouse-backup_2.6.18_amd64.deb
+    mode: '0644'
+
+- name: Install clickhouse-backup from .deb package
+  apt:
+    deb: /tmp/clickhouse-backup_2.6.18_amd64.deb
+    state: present
+  become: true
+
+- name: Ensure clickhouse-backup config directory exists
+  file:
+    path: /etc/clickhouse-backup
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Write clickhouse-backup config.yml
+  copy:
+    dest: /etc/clickhouse-backup/config.yml
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      general:
+        remote_storage: s3
+
+      clickhouse:
+        username: default
+        password: ""
+        host: localhost
+        port: 9000
+
+      backup:
+        path: /var/lib/clickhouse/backup
+
+      s3:
+        endpoint: "{{ minio_host }}"
+        access_key_id: "{{ minio_access_key }}"
+        secret_access_key: "{{ minio_secret_key }}"
+        bucket: "clickhouse-backups"
+        insecure: true
+        region: "us-east-1"
+
+- name: Install mc (MinIO client)
+  get_url:
+    url: https://dl.min.io/client/mc/release/linux-amd64/mc
+    dest: /usr/local/bin/mc
+    mode: '0755'
+
+- name: Ensure timestamped backup name is defined
+  set_fact:
+    backup_name: "{{ ansible_date_time.date }}_{{ ansible_date_time.time | regex_replace(':', '-') }}"
+
+# For first initial backup
+- name: Run clickhouse-backup to create backup
+  command: clickhouse-backup create --tables "test_db.users" "{{ backup_name }}"
+  register: create_backup
+  changed_when: "'success' in create_backup.stdout or 'Created' in create_backup.stdout"
+
+# Override default EC2 backup
+- name: Upload backup to MinIO
+  ansible.builtin.command:
+    cmd: clickhouse-backup upload "{{ backup_name }}"
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ minio_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ minio_secret_key }}"
+    CLICKHOUSE_BACKUP_CONFIG: /etc/clickhouse-backup/config.yml
+
+- name: Create ClickHouse backup script
+  copy:
+    dest: "{{ backup_script }}"
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      TIMESTAMP=$(date +%F-%H-%M)
+      BACKUP_DIR="/var/lib/clickhouse/backup-${TIMESTAMP}"
+      sudo -u clickhouse clickhouse-backup create --name "$TIMESTAMP" --tables "test_db.users"
+      mc alias set {{ minio_alias }} {{ minio_host }} {{ minio_access_key }} {{ minio_secret_key }}
+      mc mb --ignore-existing {{ minio_alias }}/clickhouse-backups
+      mc cp -r /var/lib/clickhouse/backup/${TIMESTAMP} {{ minio_alias }}/clickhouse-backups/
+
+- name: Schedule weekly cron job
+  cron:
+    name: "Weekly ClickHouse backup to MinIO"
+    weekday: 0 #Sunday
+    hour: 2 # 2AM
+    job: "{{ backup_script }}"
