@@ -68,6 +68,8 @@ Or use a vault password file:
 ansible-playbook playbooks/install_clickhouse.yml --vault-password-file ~/.vault_pass.txt
 ```
 
+---
+
 ### Future Enhancements: Remote-Only Backups
 To reduce local disk usage and streamline storage:
 
