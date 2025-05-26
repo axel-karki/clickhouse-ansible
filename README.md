@@ -38,7 +38,7 @@ For detailed MinIO setup, refer to the repository:
 
 ## Secure Configuration
 
-Edit the following file to set passwords and credentials:
+Edit the following file to set passwords and credentials for both clickhouse configuration and MinIO access:
 
 ```bash
 roles/clickhouse/vars/main.yml
